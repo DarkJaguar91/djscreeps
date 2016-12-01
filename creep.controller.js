@@ -38,7 +38,7 @@ module.exports = {
         birthWorkers()
         
         var harvesters = _.filter(Game.creeps, {memory: { state: 'harvester' }})
-        var builders = _.filter(Game.creeps, {memory: { state: 'builder' }})
+        // var builders = _.filter(Game.creeps, {memory: { state: 'builder' }})
         var idle = _.filter(Game.creeps, {memory: { state: 'idle' }})
         var emptyStructures = _.filter(Game.structures, (struct) => {
             if (struct.structureType == STRUCTURE_CONTROLLER) return false
@@ -51,27 +51,27 @@ module.exports = {
             harvesters.push(creep)
             idle.splice(0, 1)
         }
-        
-        for (var siteName in Game.constructionSites) {
-            if (builders.length > Math.floor(0.7 * Memory.CREEP_SIZE)) {
-                break;
-            }
-            var site = Game.constructionSites[siteName]
-            var closestIdleCreep = site.pos.findClosestByPath(FIND_MY_CREEPS, {
-                filter: (creep) => {
-                    return creep.memory.state == 'idle'
-                }
-            })
-            if (closestIdleCreep) {
-                builders.push(closestIdleCreep)
-                idle.splice(0, 1)
-                closestIdleCreep.memory.state = 'builder'
-                closestIdleCreep.memory.constructionSite = site
-            }
-        }
+
+        // for (var siteName in Game.constructionSites) {
+        //     if (builders.length > Math.floor(0.7 * Memory.CREEP_SIZE)) {
+        //         break;
+        //     }
+        //     var site = Game.constructionSites[siteName]
+        //     var closestIdleCreep = site.pos.findClosestByPath(FIND_MY_CREEPS, {
+        //         filter: (creep) => {
+        //             return creep.memory.state == 'idle'
+        //         }
+        //     })
+        //     if (closestIdleCreep) {
+        //         builders.push(closestIdleCreep)
+        //         idle.splice(0, 1)
+        //         closestIdleCreep.memory.state = 'builder'
+        //         closestIdleCreep.memory.constructionSite = site
+        //     }
+        // }
         
         executeRole(harvesterRole, harvesters)
-        executeRole(builderRole, builders)
+        // executeRole(builderRole, builders)
         executeRole(upgraderRole, idle)
     }
 };

@@ -9,6 +9,8 @@ module.exports.loop = function () {
     // delete Memory.sources
     // for (let name in Game.creeps) {
     //     delete Game.creeps[name].memory.targetSource
+    //     Game.creeps[name].memory.state = 'idle'
+    //     Game.creeps[name].memory.upgrading = false
     // }
 
     const towers = _.filter(Game.structures, (structure) => {
