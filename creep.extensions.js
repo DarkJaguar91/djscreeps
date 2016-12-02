@@ -92,6 +92,7 @@ Creep.prototype._build = function() {
 }
 
 Creep.prototype.work = function() {
+    Memory.rooms = Memory.rooms || {}
     Memory.rooms[this.room] = Memory.rooms[this.room] || {
         builders: 0,
         energizers: 0,

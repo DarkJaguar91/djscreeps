@@ -1,7 +1,8 @@
-// const _ = require('lodash');
+const _ = require('lodash');
 require('struct.extensions')
 require('creep.extensions')
 const creepController = require('creep.controller');
+const towerRole = require('role.tower')
 
 module.exports.loop = function () {
     creepController.run()

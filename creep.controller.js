@@ -17,7 +17,7 @@ var birthWorkers = function() {
         return creep.memory.state != 'warrior'
     })
     var cnt = creeps.length
-    var type = [WORK, CARRY, MOVE]
+    var type = [WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
     var availableSpawns = _.filter(Game.spawns, (spawn) => {
         return spawn.canCreateCreep(type, null, { state: 'idle'}) == 0
     })
