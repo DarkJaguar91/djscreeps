@@ -38,9 +38,9 @@ module.exports = {
         return src.harvesters < src.totalSlots
     },
     book: function (sourceId) {
-        Memory.sources[sourceId].harvesters++
+        ++Memory.sources[sourceId].harvesters
     },
     release: function(sourceId) {
-        Memory.sources[sourceId].harvesters--
+        --Memory.sources[sourceId].harvesters
     }
 }
