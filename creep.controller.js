@@ -1,7 +1,7 @@
 const resourceManager = require('resource.manager')
-var clearMemory = function() {
-    for (var creepName in Memory.creeps) {
-        if (!Game.creeps[creepName]) {
+const clearMemory = function () {
+    for (let creepName in Memory.creeps) {
+        if (Memory.creeps.hasOwnProperty(creepName) && !Game.creeps[creepName]) {
             console.log('RIP: ' + creepName)
             if (Memory.creeps[creepName].targetSource) {
                 resourceManager.release(Memory.creeps[creepName].targetSource)
@@ -9,22 +9,22 @@ var clearMemory = function() {
             delete Memory.creeps[creepName]
         }
     }
-}
-var birthWorkers = function() {
+};
+const birthWorkers = function () {
     Memory.CREEP_SIZE = Memory.CREEP_SIZE || 5
-    
-    var creeps = _.filter(Game.creeps, (creep) => {
+
+    const creeps = _.filter(Game.creeps, (creep) => {
         return creep.memory.state != 'warrior'
-    })
-    var cnt = creeps.length
-    var type = [WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-    var availableSpawns = _.filter(Game.spawns, (spawn) => {
-        return spawn.canCreateCreep(type, null, { state: 'idle'}) == 0
-    })
-    for (var i = 0; i < (Memory.CREEP_SIZE - cnt) && i < availableSpawns.length; ++i) {
-        availableSpawns[i].createCreep(type, null, { state: 'idle'})
+    });
+    const cnt = creeps.length;
+    const type = [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
+    const availableSpawns = _.filter(Game.spawns, (spawn) => {
+        return spawn.canCreateCreep(type, null, {state: 'idle'}) == 0
+    });
+    for (let i = 0; i < (Memory.CREEP_SIZE - cnt) && i < availableSpawns.length; ++i) {
+        availableSpawns[i].createCreep(type, null, {state: 'idle'})
     }
-}
+};
 
 module.exports = {
     run: function() {
@@ -32,8 +32,10 @@ module.exports = {
         birthWorkers()
         
         for (let creepName in Game.creeps) {
-            var creep = Game.creeps[creepName]
-            creep.work()
+            if (Game.creeps.hasOwnProperty(creepName)) {
+                const creep = Game.creeps[creepName];
+                creep.work()
+            }
         }
         
         // var harvesters = _.filter(Game.creeps, {memory: { state: 'harvester' }})
