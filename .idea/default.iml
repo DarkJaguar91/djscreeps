@@ -6,5 +6,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Screeps" level="application" />
+    <orderEntry type="library" name="Screeps" level="application" />
   </component>
 </module>
