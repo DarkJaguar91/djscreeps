@@ -1,110 +1,149 @@
-Creep.prototype.gather = function () {
-    const source = Game.getObjectById(this.memory.source)
-    const links = source.getLongRangeLinks()
-    const storage = this.room.storage
+let c = require('constants')
 
-    if (!this.memory.gathering && this.carry.energy == 0) {
-        this.memory.gathering = true;
+function energize(creep) {
+    creep.say('energize')
+    if (!creep.memory.target) {
+        creep.memory.task = undefined
+        return
     }
-    if (this.memory.gathering && this.carry.energy == this.carryCapacity) {
-        this.memory.gathering = false;
+    const target = Game.getObjectById(creep.memory.target)
+    let result = creep.transfer(target, RESOURCE_ENERGY)
+    if (result == ERR_NOT_IN_RANGE) {
+        creep.moveTo(target)
     }
-
-    if (this.memory.gathering) {
-        if (source.getLongRangeLinks().length == 0) {
-            const link = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                filter: (structure) => {
-                    return structure.structureType == STRUCTURE_LINK && structure.isStorageLink() &&
-                        structure.energy > 0
-                }
-            })
-            if (link) {
-                if (this.withdraw(link, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    this.moveTo(link)
-                }
-                return
-            }
-        }
-        if (this.harvest(source) == ERR_NOT_IN_RANGE) {
-            this.moveTo(source)
-        }
-    } else {
-        let target = null
-        if (links && links.length > 0) {
-            target = links[0]
-            for (let link of links) {
-                if (link && link.energy <= link.energyCapacity) {
-                    target = link
-                    break;
-                }
-            }
-        }
-        target = target || storage || this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                filter: (structure) => {
-                    return (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION)
-                        && structure.energy < structure.energyCapacity
-                }
-            })
-        if (target) {
-            if (target == storage) {
-                this.transfer(target, RESOURCE_ENERGY)
-            }
-            if (this.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                this.moveTo(target)
-            }
-        }
+    if (result == OK || target.energy == target.energyCapacity || result == ERR_NOT_ENOUGH_ENERGY) {
+        creep.memory.task = undefined
+        creep.memory.target = undefined
+        target.memory.worker = undefined
     }
 }
 
-Creep.prototype.work = function () {
-    const name = this.name
-    if (!this.memory.gathering && this.carry.energy == 0) {
-        this.memory.gathering = true;
-    }
-    if (this.memory.gathering && this.carry.energy == this.carryCapacity) {
-        this.memory.gathering = false;
-    }
+function harvest(creep) {
+    creep.say('harvest')
+    const source = creep.pos.findClosestByPath(FIND_SOURCES_ACTIVE)
 
-    if (this.memory.gathering) {
-        const storage = this.room.storage
-        if (storage && storage.store[RESOURCE_ENERGY] >= this.carryCapacity) {
-            if (this.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                this.moveTo(storage)
-            }
-        } else {
-            const source = this.pos.findClosestByPath(FIND_SOURCES_ACTIVE)
-            if (source && this.harvest(source) == ERR_NOT_IN_RANGE) {
-                this.moveTo(source)
-            }
+    if (source) {
+        let result = creep.harvest(source)
+        if (result == ERR_NOT_IN_RANGE) {
+            creep.moveTo(source)
         }
-    } else {
-        const energyStructure = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-            filter: (structure) => {
-                let worker = (!structure.memory.worker) || !Game.creeps[structure.memory.worker] || name == structure.memory.worker
-                return (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_TOWER) &&
-                    structure.energy < structure.energyCapacity && worker
-            }
-        })
-        if (energyStructure) {
-            energyStructure.memory.worker = name
-            const result = this.transfer(energyStructure, RESOURCE_ENERGY)
-            if (result == ERR_NOT_IN_RANGE) {
-                this.moveTo(energyStructure)
-            } else if (result == OK) {
-                delete energyStructure.memory.worker
-            }
-            return
+    }
+    if (creep.carry.energy == creep.carryCapacity) {
+        creep.memory.task = undefined
+    }
+}
+
+function upgradeController(creep) {
+    creep.say('upgrade')
+    const result = creep.upgradeController(creep.room.controller)
+    if (result == ERR_NOT_IN_RANGE) {
+        creep.moveTo(creep.room.controller)
+    } else if (result == ERR_NOT_ENOUGH_RESOURCES || creep.carry.energy == 0) {
+        creep.memory.task = undefined
+    }
+}
+
+function renew(creep) {
+    creep.say('renew')
+    if (!creep.memory.target) {
+        creep.memory.task = undefined
+        return
+    }
+    const target = Game.getObjectById(creep.memory.target)
+    const result = target.renewCreep(creep)
+    if (result == ERR_NOT_IN_RANGE) {
+        creep.moveTo(target)
+    }
+    if (result == ERR_FULL || result == ERR_NOT_ENOUGH_ENERGY) {
+        creep.memory.task = undefined
+        creep.memory.target = undefined
+    }
+}
+
+function build(creep) {
+    creep.say('build')
+    if (!creep.memory.target) {
+        creep.memory.task = undefined
+        return
+    }
+    const target = Game.getObjectById(creep.memory.target)
+    const result = creep.build(target)
+    if (result == ERR_NOT_IN_RANGE) {
+        creep.moveTo(target)
+    }
+    if (result == ERR_NOT_ENOUGH_ENERGY || creep.carry.energy == 0 || result == ERR_INVALID_TARGET) {
+        creep.memory.task = undefined
+        creep.memory.target = undefined
+    }
+}
+
+function checkForRenewal(creep) {
+    if (creep.memory.task == c.TASK.RENEW) return
+
+    const spawn = creep.pos.findClosestByPath(FIND_MY_SPAWNS)
+    if (creep.pos.getRangeTo(spawn) + 50 >= creep.ticksToLive) {
+        creep.memory.target = spawn.id
+        creep.memory.task = c.TASK.RENEW
+    }
+}
+
+function getWorkerTask(creep) {
+    if (creep.carry.energy == 0) {
+        return c.TASK.HARVEST
+    }
+    const energyDeprivedStructure = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+        filter: (structure) => {
+            let worker = (!structure.memory.worker) || !Game.creeps[structure.memory.worker] || creep.name == structure.memory.worker
+            return (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_TOWER) &&
+                structure.energy < structure.energyCapacity && worker
         }
-        let constructionSites = this.room.find(FIND_MY_CONSTRUCTION_SITES)
+    })
+    if (energyDeprivedStructure) {
+        energyDeprivedStructure.memory.worker = creep.name
+        creep.memory.target = energyDeprivedStructure.id
+        return c.TASK.ENERGIZE
+    }
+    const constructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES)
+    if (constructionSites.length > 0) {
         constructionSites.sort((a, b) => (b.progress / b.progressTotal) - (a.progress / a.progressTotal))
-        if (constructionSites && constructionSites.length > 0) {
-            if (this.build(constructionSites[0]) == ERR_NOT_IN_RANGE) {
-                this.moveTo(constructionSites[0])
-            }
-            return
-        }
-        if (this.upgradeController(this.room.controller) == ERR_NOT_IN_RANGE) {
-            this.moveTo(this.room.controller)
-        }
+        creep.memory.target = constructionSites[0].id
+        return c.TASK.BUILD
+    }
+    return c.TASK.UPGRADE
+}
+
+function work(creep) {
+    checkForRenewal(creep)
+    if (!creep.memory.task)
+        creep.memory.task = getWorkerTask(creep)
+
+    switch (creep.memory.task) {
+        case c.TASK.HARVEST:
+            harvest(creep)
+            break
+        case c.TASK.ENERGIZE:
+            energize(creep)
+            break
+        case c.TASK.RENEW:
+            renew(creep)
+            break
+        case c.TASK.BUILD:
+            build(creep)
+            break
+        case c.TASK.UPGRADE:
+        default:
+            upgradeController(creep)
+    }
+}
+
+Creep.prototype.run = function () {
+    this.memory.type = this.memory.type || c.TYPE.WORKER
+    switch (this.memory.type) {
+        case c.TYPE.WORKER:
+            work(this)
+            break
+        default:
+            this.say('No type')
+            this.memory.type = c.TYPE.WORKER
     }
 }
