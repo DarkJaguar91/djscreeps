@@ -1,3 +1,5 @@
+const c = require('constants')
+
 if (!Object.getOwnPropertyDescriptor(Room.prototype, 'memory')) {
     Object.defineProperty(Room.prototype, 'memory', {
         get: function () {
@@ -22,7 +24,7 @@ if (!Object.getOwnPropertyDescriptor(Room.prototype, 'memory')) {
     });
 }
 
-const getWorkerBody = function(room) {
+function getWorkerBody(room) {
     const energyStructures =  room.find(FIND_MY_STRUCTURES, {
         filter: (structure) => {
             return structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN
@@ -49,97 +51,64 @@ const getWorkerBody = function(room) {
     return body
 }
 
-Room.prototype.checkWorkerPopulation = function (numSourceWorkers) {
-    const creeps = this.find(FIND_MY_CREEPS, {
+function checkWorkerPopulation(room) {
+    const workers = room.find(FIND_MY_CREEPS, {
         filter: (creep) => {
-            return creep.memory.type == 'worker' && creep.memory.role != 'harvester'
+            return creep.memory.type == c.TYPE.WORKER
         }
     })
-    this.memory.extraCreeps = this.memory.extraCreeps || 4
-    const totCreeps = this.memory.extraCreeps
-
-    if (creeps.length < totCreeps) {
-        const spawns = this.find(FIND_MY_SPAWNS, {
+    room.memory.numWorkers = room.memory.numWorkers || 4
+    if (workers.length < room.memory.numWorkers) {
+        const spawns = room.find(FIND_MY_SPAWNS, {
             filter: (spawn) => {
                 return !spawn.spawning
             }
         })
         if (spawns.length > 0) {
-            const num = Math.min(spawns.length, totCreeps - creeps.length)
-            let body = getWorkerBody(this)
+            const body = getWorkerBody(room)
+            const numToSpawn = Math.min(spawns.length, room.memory.numWorkers - workers.length)
+            for (let i = 0; i < numToSpawn; ++i) {
+                spawns[i].createCreep(body, null, { type: c.TYPE.WORKER })
+            }
+        }
+    }
+}
 
-            for (let i = 0; i < num; ++i) {
-                if (spawns[i].canCreateCreep(body) == OK) {
-                    spawns[i].createCreep(body, null, { type: 'worker' })
+function checkMinerPopulation(room) {
+    if (room.storage) {
+        const sources = room.find(FIND_SOURCES)
+        const spawns = room.find(FIND_MY_SPAWNS, {
+            filter: (spawn) => {
+                return !spawn.spawning
+            }
+        })
+        for (let source of sources){
+            if (!source.memory.worker || !Game.creeps[source.memory.worker]) {
+                if (spawns.length > 0) {
+                    const body = getWorkerBody(room)
+                    source.memory.worker = spawns[0].createCreep(body, null, {type: c.TYPE.MINER, source: source.id})
+                    spawns.splice(0, 1)
                 }
             }
         }
     }
 }
 
-Room.prototype.checkSourceWorkers = function(sources) {
-    for (let source of sources) {
-        if (!source.memory.worker || !Game.creeps[source.memory.worker]) {
-            delete source.memory.worker
-
-            // const creeps = this.find(FIND_MY_CREEPS, {
-            //     filter: (creep) => {
-            //         return creep.memory.type == 'worker' && creep.memory.role != 'harvester'
-            //     }
-            // })
-            // if (creeps.length > 0) {
-            //     source.memory.worker = creeps[creeps.length - 1].name
-            //     creeps[creeps.length - 1].memory.role = 'harvester'
-            //     creeps[creeps.length - 1].memory.source = source.id
-            // }
-            const spawns = this.find(FIND_MY_SPAWNS, {
-                filter: (spawn) => {
-                    return !spawn.spawning
-                }
-            })
-            if (spawns && spawns.length > 0) {
-                source.memory.worker = spawns[0].createCreep(getWorkerBody(this), null, { type: 'worker', role: 'harvester', source: source.id})
-            }
-        }
-    }
-}
-
-Room.prototype.manageCreeps = function() {
-    const harvesters = this.find(FIND_MY_CREEPS, {
-        filter: (creep) => {
-            return creep.memory.role == 'harvester'
-        }
-    })
-    for (let creep of harvesters) {
-        creep.gather()
-    }
-
-    const others = this.find(FIND_MY_CREEPS, {
-        filter: (creep) => {
-            return creep.memory.type == 'worker' && creep.memory.role != 'harvester'
-        }
-    })
-    for (let creep of others) {
-        creep.work()
-    }
-}
-
-Room.prototype.manageLinks = function() {
-    const links = this.find(FIND_MY_STRUCTURES, {
+function runLinks(room) {
+    const links = room.find(FIND_MY_STRUCTURES, {
         filter: (structure) => {
             return structure.structureType == STRUCTURE_LINK
         }
     })
-
     for (let link of links) {
         link.run()
     }
 }
 
-Room.prototype.manageTowers = function() {
-    const towers = this.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => {
-            return structure.structureType == STRUCTURE_TOWER
+function runTowers(room) {
+    const towers = room.find(FIND_MY_STRUCTURES, {
+        filter: (structures) => {
+            return structures.structureType == STRUCTURE_TOWER
         }
     })
 
@@ -148,12 +117,30 @@ Room.prototype.manageTowers = function() {
     }
 }
 
-Room.prototype.run = function () {
-    const sources = this.find(FIND_SOURCES)
+function runCreeps(room) {
+    let creeps = room.find(FIND_MY_CREEPS);
+    let numUpgraders = _.filter(creeps, (creep) => {
+        return creep.memory.task == c.TASK.UPGRADE
+    }).length
+    for (let creep of creeps) {
+        let currentTask = creep.memory.task
+        let newTask = creep.getTask(numUpgraders == 0)
 
-    this.checkWorkerPopulation(sources.length)
-    this.checkSourceWorkers(sources)
-    this.manageLinks()
-    this.manageTowers()
-    this.manageCreeps()
+        if (newTask != currentTask) {
+            creep.memory.task = newTask
+            if (currentTask == c.TASK.UPGRADE)
+                --numUpgraders;
+            else if (newTask == c.TASK.UPGRADE)
+                ++numUpgraders
+        }
+        creep.run()
+    }
+}
+
+Room.prototype.run = function() {
+    checkWorkerPopulation(this)
+    checkMinerPopulation(this)
+    runLinks(this)
+    runTowers(this)
+    runCreeps(this)
 }
