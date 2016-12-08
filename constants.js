@@ -1,6 +1,7 @@
 module.exports = {
     TYPE: {
         WORKER: 'worker',
+        MINER: 'miner',
     },
     TASK: {
         HARVEST: 'harvest',
@@ -8,5 +9,7 @@ module.exports = {
         UPGRADE: 'upgrade',
         RENEW: 'renew',
         BUILD: 'build',
+        MINE: 'mine',
+        TRANSFER_LINK: 'transfer_link',
     },
 }

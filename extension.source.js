@@ -21,7 +21,7 @@ Object.defineProperty(Source.prototype, 'memory', {
 });
 
 Source.prototype.getLongRangeLinks = function () {
-    const links = this.pos.findInRange(FIND_MY_STRUCTURES, 5, {
+    return this.pos.findInRange(FIND_MY_STRUCTURES, 5, {
         filter: (structure) => {
             return structure.structureType == STRUCTURE_LINK && structure.pos.findInRange(FIND_MY_STRUCTURES, 5, {
                     filter: (structure) => {
@@ -30,5 +30,4 @@ Source.prototype.getLongRangeLinks = function () {
                 }).length == 0
         }
     })
-    return links
 }
