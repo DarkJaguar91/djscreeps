@@ -1,4 +1,5 @@
 require('extension.structure')
+require('extension.tower')
 require('extension.link')
 require('extension.source')
 require('extension.creep')

@@ -74,7 +74,7 @@ function renew(creep) {
     if (result == ERR_NOT_IN_RANGE) {
         creep.moveTo(target)
     }
-    if (result == ERR_FULL || result == ERR_NOT_ENOUGH_ENERGY) {
+    if (result == ERR_FULL) {
         creep.memory.task = undefined
         creep.memory.target = undefined
     }
@@ -123,11 +123,20 @@ function needsRenewal(creep) {
     }
 }
 
+function noSpawnsNeedEnergy(creep) {
+    return creep.room.find(FIND_MY_SPAWNS, {
+        filter: (structure) => {
+            let worker = (!structure.memory.worker) || !Game.creeps[structure.memory.worker] || name == structure.memory.worker
+            return structure.energy < structure.energyCapacity && worker
+        }
+    }).length == 0
+}
+
 function getWorkerTask(creep, forceUpgrader) {
     if (creep.carry.energy == 0) {
         return c.TASK.HARVEST
     }
-    if (forceUpgrader) {
+    if (forceUpgrader && noSpawnsNeedEnergy(creep)) {
         return c.TASK.UPGRADE
     }
     const name = creep.name
