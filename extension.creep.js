@@ -113,6 +113,22 @@ function transferFromLink(creep) {
     }
 }
 
+function moveToFlag(creep) {
+    creep.say('Flag - ' + creep.memory.target)
+    const flag = Game.flags[creep.memory.target]
+    if (!creep.memory.target || !flag) {
+        creep.memory.target = undefined
+        creep.memory.task = undefined
+    }
+
+    if (creep.pos.getRangeTo(flag) > 0) {
+        creep.moveTo(flag)
+    } else {
+        creep.memory.target = undefined
+        creep.memory.task = undefined
+    }
+}
+
 function needsRenewal(creep) {
     if (creep.memory.task == c.TASK.RENEW) return
 
@@ -197,6 +213,11 @@ Creep.prototype.getTask = function (forceUpgrader) {
     if (this.memory.task) {
         return this.memory.task
     }
+    if (this.memory.targetFlag) {
+        this.memory.target = this.memory.targetFlag
+        this.memory.targetFlag = undefined
+        return c.TASK.FLAG_MOVE
+    }
     switch (this.memory.type) {
         case c.TYPE.MINER:
             return getMinerTask(this);
@@ -225,6 +246,9 @@ Creep.prototype.run = function () {
             break;
         case c.TASK.TRANSFER_LINK:
             transferFromLink(this)
+            break;
+        case c.TASK.FLAG_MOVE:
+            moveToFlag(this)
             break;
         case c.TASK.UPGRADE:
         default:
