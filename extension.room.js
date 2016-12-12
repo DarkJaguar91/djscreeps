@@ -1,3 +1,6 @@
+const C = require('constants')
+const Queue = require('queue')
+
 if (!Object.getOwnPropertyDescriptor(Room.prototype, 'memory')) {
     Object.defineProperty(Room.prototype, 'memory', {
         get: function () {
@@ -22,138 +25,30 @@ if (!Object.getOwnPropertyDescriptor(Room.prototype, 'memory')) {
     });
 }
 
-const getWorkerBody = function(room) {
-    const energyStructures =  room.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => {
-            return structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN
-        }
-    })
-    let capacity = 0
-    for (let structure of energyStructures) {
-        capacity += structure.energy
-    }
-    room.memory.percentCapacityForWorkers = room.memory.percentCapacityForWorkers || 0.33
-    capacity = Math.floor(Math.max(1, (capacity * room.memory.percentCapacityForWorkers) / 200))
+Room.prototype = Object.assign(Room.prototype,
+    {
+        setMemoryDefaults: function () {
+            this.memory.extraCarriers = this.memory.extraCarriers || 0
+            this.memory.upgraders = this.memory.upgraders || 1
+            this.memory.builders = this.memory.builders || 2
+        },
+        getCurrentObjects: function () {
+            this.sources = this.find(FIND_SOURCES)
+            this.creeps = _.groupBy(this.find(FIND_MY_CREEPS), "memory.type")
 
-    let body = [WORK]
-    for (let i = 0; i < capacity - 1; ++i) {
-        body.push(WORK)
-    }
-    for (let i = 0; i < capacity; ++i) {
-        body.push(CARRY)
-    }
-    for (let i = 0; i < capacity; ++i) {
-        body.push(MOVE)
-    }
-
-    return body
-}
-
-Room.prototype.checkWorkerPopulation = function (numSourceWorkers) {
-    const creeps = this.find(FIND_MY_CREEPS, {
-        filter: (creep) => {
-            return creep.memory.type == 'worker' && creep.memory.role != 'harvester'
-        }
-    })
-    this.memory.extraCreeps = this.memory.extraCreeps || 4
-    const totCreeps = this.memory.extraCreeps
-
-    if (creeps.length < totCreeps) {
-        const spawns = this.find(FIND_MY_SPAWNS, {
-            filter: (spawn) => {
-                return !spawn.spawning
+            console.log(C.TYPE.MINER + ' MOFOs ' + this.creeps)
+            for (let a in this.creeps) {
+                console.log(a)
+                console.log(this.creeps[a])
             }
-        })
-        if (spawns.length > 0) {
-            const num = Math.min(spawns.length, totCreeps - creeps.length)
-            let body = getWorkerBody(this)
+        },
+        checkCreepPopulation: function () {
 
-            for (let i = 0; i < num; ++i) {
-                if (spawns[i].canCreateCreep(body) == OK) {
-                    spawns[i].createCreep(body, null, { type: 'worker' })
-                }
-            }
+        },
+        run: function () {
+            this.setMemoryDefaults()
+            this.getCurrentObjects()
+            // this.checkCreepPopulation()
         }
     }
-}
-
-Room.prototype.checkSourceWorkers = function(sources) {
-    for (let source of sources) {
-        if (!source.memory.worker || !Game.creeps[source.memory.worker]) {
-            delete source.memory.worker
-
-            // const creeps = this.find(FIND_MY_CREEPS, {
-            //     filter: (creep) => {
-            //         return creep.memory.type == 'worker' && creep.memory.role != 'harvester'
-            //     }
-            // })
-            // if (creeps.length > 0) {
-            //     source.memory.worker = creeps[creeps.length - 1].name
-            //     creeps[creeps.length - 1].memory.role = 'harvester'
-            //     creeps[creeps.length - 1].memory.source = source.id
-            // }
-            const spawns = this.find(FIND_MY_SPAWNS, {
-                filter: (spawn) => {
-                    return !spawn.spawning
-                }
-            })
-            if (spawns && spawns.length > 0) {
-                source.memory.worker = spawns[0].createCreep(getWorkerBody(this), null, { type: 'worker', role: 'harvester', source: source.id})
-            }
-        }
-    }
-}
-
-Room.prototype.manageCreeps = function() {
-    const harvesters = this.find(FIND_MY_CREEPS, {
-        filter: (creep) => {
-            return creep.memory.role == 'harvester'
-        }
-    })
-    for (let creep of harvesters) {
-        creep.gather()
-    }
-
-    const others = this.find(FIND_MY_CREEPS, {
-        filter: (creep) => {
-            return creep.memory.type == 'worker' && creep.memory.role != 'harvester'
-        }
-    })
-    for (let creep of others) {
-        creep.work()
-    }
-}
-
-Room.prototype.manageLinks = function() {
-    const links = this.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => {
-            return structure.structureType == STRUCTURE_LINK
-        }
-    })
-
-    for (let link of links) {
-        link.run()
-    }
-}
-
-Room.prototype.manageTowers = function() {
-    const towers = this.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => {
-            return structure.structureType == STRUCTURE_TOWER
-        }
-    })
-
-    for (let tower of towers) {
-        tower.run()
-    }
-}
-
-Room.prototype.run = function () {
-    const sources = this.find(FIND_SOURCES)
-
-    this.checkWorkerPopulation(sources.length)
-    this.checkSourceWorkers(sources)
-    this.manageLinks()
-    this.manageTowers()
-    this.manageCreeps()
-}
+)
