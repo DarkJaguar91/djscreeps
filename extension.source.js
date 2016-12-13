@@ -1,34 +1,21 @@
-Object.defineProperty(Source.prototype, 'memory', {
+Object.defineProperty(Structure.prototype, 'memory', {
     get: function () {
-        if (_.isUndefined(Memory.sources)) {
-            Memory.sources = {};
+        if (_.isUndefined(Memory.structure)) {
+            Memory.structure = {};
         }
-        if (!_.isObject(Memory.sources)) {
+        if (!_.isObject(Memory.structure)) {
             return undefined;
         }
-        return Memory.sources[this.id] = Memory.sources[this.id] || {};
+        return Memory.structure[this.id] = Memory.structure[this.id] || {};
     },
     set: function (value) {
-        if (_.isUndefined(Memory.sources)) {
-            Memory.sources = {};
+        if (_.isUndefined(Memory.structure)) {
+            Memory.structure = {};
         }
-        if (!_.isObject(Memory.sources)) {
+        if (!_.isObject(Memory.structure)) {
             throw new Error('Could not set source memory');
         }
-        Memory.sources[this.id] = value;
+        Memory.structure[this.id] = value;
     },
     configurable: true
 });
-
-Source.prototype.getLongRangeLinks = function () {
-    const links = this.pos.findInRange(FIND_MY_STRUCTURES, 5, {
-        filter: (structure) => {
-            return structure.structureType == STRUCTURE_LINK && structure.pos.findInRange(FIND_MY_STRUCTURES, 5, {
-                    filter: (structure) => {
-                        return structure.structureType == STRUCTURE_STORAGE
-                    }
-                }).length == 0
-        }
-    })
-    return links
-}

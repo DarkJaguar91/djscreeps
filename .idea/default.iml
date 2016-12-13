@@ -8,5 +8,6 @@
     <orderEntry type="library" name="Screeps" level="application" />
     <orderEntry type="library" name="Screeps" level="application" />
     <orderEntry type="library" name="lodash-DefinitelyTyped" level="application" />
+    <orderEntry type="library" name="node-DefinitelyTyped" level="application" />
   </component>
 </module>
