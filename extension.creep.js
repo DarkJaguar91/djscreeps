@@ -2,7 +2,7 @@
  * Created by brandon on 2016/12/13.
  */
 
-Creep.prototype = Object.assign(Creep.prototype, {
+Object.assign(Creep.prototype, {
     _checkEnergyLevel: function () {
         if (this.carry.energy == 0) {
             this.memory.task = "collecting"
@@ -29,11 +29,14 @@ Creep.prototype = Object.assign(Creep.prototype, {
     _getEnergyFromStorage: function () {
         const storage = this.room.storage
         const carryCap = this.carryCapacity
-        const target = (storage && _.sum(storage.store) > carryCap) ? storage :
-            this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                filter: (s) => (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION) && s.energy >
-                carryCap
-            })
+        const target = (storage && _.sum(storage.store) > carryCap) ? storage : ((this.room.energyAvailable > (this.room.energyCapacityAvailable / 2 + carryCap)) ?
+                this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+                    filter: (s) => {
+                        return (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION ||
+                            s.structureType == STRUCTURE_CONTAINER) &&
+                            s.energy >= carryCap
+                    }
+                }) : undefined)
 
         if (target) {
             if (this.withdraw(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
@@ -54,7 +57,6 @@ Creep.prototype = Object.assign(Creep.prototype, {
                 this.pos.findClosestByPath(FIND_STRUCTURES, {
                     filter: (s) => s.structureType == STRUCTURE_TOWER && s.energy < s.energyCapacity
                 }))
-
 
         if (target) {
             if (this.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {

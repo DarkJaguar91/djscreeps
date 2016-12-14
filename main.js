@@ -1,6 +1,8 @@
-require('extension.source')
-require('extension.creep')
+require('extension.structure');
+require('extension.source');
+require('extension.creep');
 const C = require('constants');
+const Assembly = require('creep.assembly');
 const roleHarvester = require('role.harvester');
 const roleMiner = require('role.miner');
 const roleCarrier = require('role.carrier');
@@ -9,10 +11,11 @@ const roleBuilder = require('role.builder');
 
 module.exports.loop = function () {
     for (let roomName in Game.rooms) {
-        if (!Game.rooms.hasOwnProperty(roomName)) continue
+        if (!Game.rooms.hasOwnProperty(roomName)) continue;
 
-        const room = Game.rooms[roomName]
+        const room = Game.rooms[roomName];
         room.creeps = room.find(FIND_MY_CREEPS);
+        room.sources = room.find(FIND_SOURCES);
 
         for (let creep of room.creeps) {
             switch (creep.memory.role) {
@@ -35,5 +38,7 @@ module.exports.loop = function () {
                     break;
             }
         }
+
+        new Assembly(room).run()
     }
 }
