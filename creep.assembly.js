@@ -43,8 +43,8 @@ CreepAssembly.prototype = {
     },
     buildMiner: function (spawn) {
         const energy = this.room.energyAvailable * this.percentCapacityUsage;
-        const numWork = Math.max(2, Math.floor(energy / 125));
-        const numMove = Math.max(1, Math.floor(numWork / 2));
+        const numWork = Math.min(5, Math.max(2, Math.floor(energy / 125)));
+        const numMove = Math.max(1, Math.ceil(numWork / 2));
 
         const body = this.createBody(numMove, 0, numWork);
         const mine = spawn.pos.findClosestByPath(FIND_SOURCES, {
@@ -62,8 +62,8 @@ CreepAssembly.prototype = {
     },
     buildCarrier: function (spawn) {
         const energy = this.room.energyAvailable * this.percentCapacityUsage;
-        const numCarry = Math.max(2, Math.floor(energy / 75));
-        const numMove = Math.max(1, Math.floor(numCarry / 2));
+        const numCarry = Math.min(32, Math.max(2, Math.floor(energy / 75)));
+        const numMove = Math.max(1, Math.ceil(numCarry / 2));
 
         const body = this.createBody(numMove, numCarry);
         const mine = spawn.pos.findClosestByPath(FIND_SOURCES, {

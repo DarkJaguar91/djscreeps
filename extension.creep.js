@@ -29,14 +29,29 @@ Object.assign(Creep.prototype, {
     _getEnergyFromStorage: function () {
         const storage = this.room.storage
         const carryCap = this.carryCapacity
-        const target = (storage && _.sum(storage.store) > carryCap) ? storage : ((this.room.energyAvailable > (this.room.energyCapacityAvailable / 2 + carryCap)) ?
-                this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                    filter: (s) => {
-                        return (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION ||
-                            s.structureType == STRUCTURE_CONTAINER) &&
-                            s.energy >= carryCap
-                    }
-                }) : undefined)
+        const creep = this
+
+        function getCloseContainer() {
+            return creep.pos.findInRange(FIND_STRUCTURES, 10, {
+                filter: (s) => {
+                    return s.structureType == STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] >= carryCap
+                }
+            })[0]
+        }
+
+        function getClosestEnergyStructure() {
+            return creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+                filter: (s) => {
+                    return ((s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION) &&
+                    s.energy >= carryCap)
+                }
+            })
+        }
+
+        const enoughEnergyInRoomForCreepCreation = (this.room.energyAvailable > (this.room.energyCapacityAvailable / 2 + carryCap));
+
+        const target = (storage && _.sum(storage.store) > carryCap) ? storage : (getCloseContainer() || enoughEnergyInRoomForCreepCreation ?
+                getClosestEnergyStructure() : undefined)
 
         if (target) {
             if (this.withdraw(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
@@ -53,10 +68,9 @@ Object.assign(Creep.prototype, {
                 filter: (s) => (s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_SPAWN)
                 && s.energy < s.energyCapacity
             })
-        const target = buildingStructure || (storage && _.sum(storage.store) < storage.storeCapacity ? storage :
-                this.pos.findClosestByPath(FIND_STRUCTURES, {
+        const target = buildingStructure || this.pos.findClosestByPath(FIND_STRUCTURES, {
                     filter: (s) => s.structureType == STRUCTURE_TOWER && s.energy < s.energyCapacity
-                }))
+            }) || (storage && _.sum(storage.store) < storage.storeCapacity ? storage : undefined)
 
         if (target) {
             if (this.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {

@@ -16,6 +16,7 @@ module.exports.loop = function () {
         const room = Game.rooms[roomName];
         room.creeps = room.find(FIND_MY_CREEPS);
         room.sources = room.find(FIND_SOURCES);
+        room.towers = room.find(FIND_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}})
 
         for (let creep of room.creeps) {
             switch (creep.memory.role) {
@@ -36,6 +37,18 @@ module.exports.loop = function () {
                 default:
                     creep.say('nothing');
                     break;
+            }
+        }
+
+        for (let tower of room.towers) {
+            const injuredStructure = tower.pos.findClosestByPath(FIND_STRUCTURES, {
+                filter: (s) => {
+                    return s.hits < s.hitsMax
+                }
+            })
+
+            if (injuredStructure) {
+                tower.repair(injuredStructure)
             }
         }
 
