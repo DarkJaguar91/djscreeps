@@ -1,4 +1,5 @@
 require('extension.structure');
+require('extension.tower');
 require('extension.source');
 require('extension.creep');
 require('extension.room');

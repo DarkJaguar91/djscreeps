@@ -15,13 +15,15 @@ TowerController.prototype = {
                 tower.attack(creep)
                 continue;
             }
-            const structure = tower.pos.findClosestByRange(FIND_STRUCTURES, {
-                filter: (s) => {
-                    return s.hits < s.hitsMax;
+            if (!tower.memory.defender) {
+                const structure = tower.pos.findClosestByRange(FIND_STRUCTURES, {
+                    filter: (s) => {
+                        return s.hits < s.hitsMax;
+                    }
+                })
+                if (structure) {
+                    tower.repair(structure)
                 }
-            })
-            if (structure) {
-                tower.repair(structure)
             }
         }
     }

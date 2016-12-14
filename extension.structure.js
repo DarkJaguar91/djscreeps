@@ -1,3 +1,6 @@
+/**
+ * Created by brandon on 2016/12/14.
+ */
 Object.defineProperty(Structure.prototype, 'memory', {
     get: function () {
         if (_.isUndefined(Memory.structures)) {
